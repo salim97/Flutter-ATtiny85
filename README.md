@@ -23,7 +23,7 @@ Building android app with flutter to monitor attiny85 and control GPIO.
             </td>
         </tr>
        
-    </table>
+ 
 </div>
     
     
