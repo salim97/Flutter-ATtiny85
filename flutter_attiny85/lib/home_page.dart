@@ -78,9 +78,7 @@ class _HomePageState extends State<HomePage> {
         if (line.contains("cpuSpeed:")) cpuSpeedMHz = line.split(":")[1] + " MHz";
         if (line.contains("millis:")) millis = line.split(":")[1] + " ms";
         if (line.contains("eeprom:")) {
-          String tmp = line.split(":")[1].split("=>")[1];
-
-          eeprom[int.parse(line.split(":")[1].split("=>")[0])] = line.split(":")[1].split("=>")[1];
+          eeprom[int.parse(line.split(":")[1].split("=>")[0])] = line.split(":")[1].split("=>")[1].codeUnitAt(0);
         }
         //_serialData.add(Text(line));
         if (_serialData.length > 20) {
@@ -120,13 +118,13 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  List<String> eeprom = [];
+  Uint8List eeprom = new Uint8List(25);
   String vcc, freeRAM, temperatureInternal, cpuSpeedMHz, millis;
 
   @override
   void initState() {
     super.initState();
-    for (int i = 0; i < 25; i++) eeprom.add("0");
+
     UsbSerial.usbEventStream.listen((UsbEvent event) {
       _getPorts();
     });
@@ -140,100 +138,82 @@ class _HomePageState extends State<HomePage> {
     _connectTo(null);
   }
 
+  void onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  int _currentIndex = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomPadding: false,
       appBar: AppBar(
         title: const Text('USB Serial Plugin example app'),
       ),
-      body: Center(
-          child: Column(children: <Widget>[
-        Text(_ports.length > 0 ? "Available Serial Ports" : "No serial devices available", style: Theme.of(context).textTheme.title),
-        ..._ports,
-        Text('Status: $_status\n'),
-        ListTile(
-          leading: Icon(FontAwesomeIcons.bolt),
-          title: Text(vcc.toString()),
-        ),
-        ListTile(
-          leading: Icon(FontAwesomeIcons.microchip),
-          title: Text(cpuSpeedMHz.toString()),
-        ),
-        ListTile(
-          leading: Icon(FontAwesomeIcons.memory),
-          title: Text(freeRAM.toString()),
-        ),
-        ListTile(
-          leading: Icon(FontAwesomeIcons.thermometer),
-          title: Text(temperatureInternal.toString()),
-        ),
-        ListTile(
-          leading: Icon(FontAwesomeIcons.clock),
-          title: Text(millis.toString()),
-        ),
-        Expanded(
-          child: ListView.builder(
-              itemCount: 10,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Row(
-                    children: <Widget>[
-                      Align(alignment: Alignment.centerLeft, child: Text("Address " + index.toString() + " :")),
-                      SizedBox(
-                        width: 15.0,
-                      ),
-                      Expanded(
-                          child: Align(
-                        alignment: Alignment.center,
-                        child: TextField(
-                          onSubmitted: (value) async {
-                            print(value);
-                            if (_port == null) {
-                              return;
-                            }
-                            String data = "es" + index.toString() + value;
-                            await _port.write(Uint8List.fromList(data.codeUnits));
-                            print("SEEEEEEEEEEEEEEEEEEEEEEEEEEEEEENNNNNNNNNNNNNNNNNND");
-                            print(data);
-                          },
-                          textAlign: TextAlign.center,
-                          decoration: new InputDecoration(labelText: "Enter number between 0 and 255"),
-                          keyboardType: TextInputType.number,
+      body: Container(
+        child: _currentIndex == 0
+            ? Center(
+                child: Column(children: <Widget>[
+                Text(_ports.length > 0 ? "Available Serial Ports" : "No serial devices available", style: Theme.of(context).textTheme.title),
+                ..._ports,
+                Text('Status: $_status\n'),
+                ListTile(
+                  leading: Icon(FontAwesomeIcons.bolt),
+                  title: Text(vcc.toString()),
+                ),
+                ListTile(
+                  leading: Icon(FontAwesomeIcons.microchip),
+                  title: Text(cpuSpeedMHz.toString()),
+                ),
+                ListTile(
+                  leading: Icon(FontAwesomeIcons.memory),
+                  title: Text(freeRAM.toString()),
+                ),
+                ListTile(
+                  leading: Icon(FontAwesomeIcons.thermometer),
+                  title: Text(temperatureInternal.toString()),
+                ),
+                ListTile(
+                  leading: Icon(FontAwesomeIcons.clock),
+                  title: Text(millis.toString()),
+                ),
+              ]))
+            : ListView.builder(
+                itemCount: 10,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Row(
+                      children: <Widget>[
+                        Align(alignment: Alignment.centerLeft, child: Text("Address " + index.toString() + " :")),
+                        SizedBox(
+                          width: 15.0,
                         ),
-                      )),
-                    ],
-                  ),
-                  trailing: Text(eeprom[index]),
-                );
-              }),
-        ),
-        /*
-        ListTile(
-          title: TextField(
-            controller: _textController,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Text To Send',
-            ),
-          ),
-          trailing: RaisedButton(
-            child: Text("Send"),
-            onPressed: _port == null
-                ? null
-                : () async {
-                    if (_port == null) {
-                      return;
-                    }
-                    String data = _textController.text + "\r\n";
-                    await _port.write(Uint8List.fromList(data.codeUnits));
-                    _textController.text = "";
-                  },
-          ),
-        ),
-        Text("Result Data", style: Theme.of(context).textTheme.title),
-        ..._serialData,
-        */
-      ])),
+                        Expanded(
+                            child: Align(
+                          alignment: Alignment.center,
+                          child: TextField(
+                            onSubmitted: (value) async {
+                              print(value);
+                              if (_port == null) {
+                                return;
+                              }
+                              await _port.write(Uint8List.fromList([101, 115, index, int.parse(value)]));
+                              await _port.write(Uint8List.fromList([101, 103, index]));
+                            },
+                            textAlign: TextAlign.center,
+                            decoration: new InputDecoration(labelText: "Enter number between 0 and 255"),
+                            keyboardType: TextInputType.number,
+                          ),
+                        )),
+                      ],
+                    ),
+                    trailing: Text(eeprom[index].toString()),
+                  );
+                }),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _port == null
             ? null
@@ -246,6 +226,20 @@ class _HomePageState extends State<HomePage> {
               },
         tooltip: 'get States',
         child: Icon(Icons.refresh),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        onTap: onTabTapped, // new
+        currentIndex: _currentIndex, // new
+        items: [
+          new BottomNavigationBarItem(
+            icon: Icon(FontAwesomeIcons.microchip),
+            title: Text("ATtiny85"),
+          ),
+          new BottomNavigationBarItem(
+            icon: Icon(FontAwesomeIcons.memory),
+            title: Text("EEPROM"),
+          ),
+        ],
       ),
     );
   }
