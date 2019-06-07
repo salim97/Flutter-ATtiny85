@@ -1,11 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_attiny85/profile_page.dart';
 import 'package:usb_serial/transaction.dart';
 import 'dart:typed_data';
 import 'package:usb_serial/usb_serial.dart';
-//import 'dart:convert';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'dart:convert';
 
 class HomePage extends StatefulWidget {
   HomePage({Key key, this.title}) : super(key: key);
@@ -62,15 +64,25 @@ class _HomePageState extends State<HomePage> {
     _deviceId = device.deviceId;
     await _port.setDTR(true);
     await _port.setRTS(true);
-    await _port.setPortParameters(
-        115200, UsbPort.DATABITS_8, UsbPort.STOPBITS_1, UsbPort.PARITY_NONE);
+    await _port.setPortParameters(115200, UsbPort.DATABITS_8, UsbPort.STOPBITS_1, UsbPort.PARITY_NONE);
 
-    _transaction = Transaction.stringTerminated(
-        _port.inputStream, Uint8List.fromList([13, 10]));
+    _transaction = Transaction.stringTerminated(_port.inputStream, Uint8List.fromList([13, 10]));
 
     _subscription = _transaction.stream.listen((String line) {
+      print("_transaction.stream.listen((String line) {");
+      print(line);
       setState(() {
-        _serialData.add(Text(line));
+        if (line.contains("vcc:")) vcc = line.split(":")[1] + " mV";
+        if (line.contains("freeram:")) freeRAM = line.split(":")[1] + " of 512 byte";
+        if (line.contains("temperatureinternal:")) temperatureInternal = line.split(":")[1] + " °C";
+        if (line.contains("cpuSpeed:")) cpuSpeedMHz = line.split(":")[1] + " MHz";
+        if (line.contains("millis:")) millis = line.split(":")[1] + " ms";
+        if (line.contains("eeprom:")) {
+          String tmp = line.split(":")[1].split("=>")[1];
+
+          eeprom[int.parse(line.split(":")[1].split("=>")[0])] = line.split(":")[1].split("=>")[1];
+        }
+        //_serialData.add(Text(line));
         if (_serialData.length > 20) {
           _serialData.removeAt(0);
         }
@@ -92,13 +104,11 @@ class _HomePageState extends State<HomePage> {
       _ports.add(ListTile(
           leading: Icon(Icons.usb),
           title: Text(device.productName == null ? " " : device.productName),
-          subtitle: Text( device.manufacturerName == null ? " " : device.manufacturerName),
+          subtitle: Text(device.manufacturerName == null ? " " : device.manufacturerName),
           trailing: RaisedButton(
-            child:
-                Text(_deviceId == device.deviceId ? "Disconnect" : "Connect"),
+            child: Text(_deviceId == device.deviceId ? "Disconnect" : "Connect"),
             onPressed: () {
-              _connectTo(_deviceId == device.deviceId ? null : device)
-                  .then((res) {
+              _connectTo(_deviceId == device.deviceId ? null : device).then((res) {
                 _getPorts();
               });
             },
@@ -110,10 +120,13 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  List<String> eeprom = [];
+  String vcc, freeRAM, temperatureInternal, cpuSpeedMHz, millis;
+
   @override
   void initState() {
     super.initState();
-
+    for (int i = 0; i < 25; i++) eeprom.add("0");
     UsbSerial.usbEventStream.listen((UsbEvent event) {
       _getPorts();
     });
@@ -135,13 +148,66 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Center(
           child: Column(children: <Widget>[
-        Text(
-            _ports.length > 0
-                ? "Available Serial Ports"
-                : "No serial devices available",
-            style: Theme.of(context).textTheme.title),
+        Text(_ports.length > 0 ? "Available Serial Ports" : "No serial devices available", style: Theme.of(context).textTheme.title),
         ..._ports,
         Text('Status: $_status\n'),
+        ListTile(
+          leading: Icon(FontAwesomeIcons.bolt),
+          title: Text(vcc.toString()),
+        ),
+        ListTile(
+          leading: Icon(FontAwesomeIcons.microchip),
+          title: Text(cpuSpeedMHz.toString()),
+        ),
+        ListTile(
+          leading: Icon(FontAwesomeIcons.memory),
+          title: Text(freeRAM.toString()),
+        ),
+        ListTile(
+          leading: Icon(FontAwesomeIcons.thermometer),
+          title: Text(temperatureInternal.toString()),
+        ),
+        ListTile(
+          leading: Icon(FontAwesomeIcons.clock),
+          title: Text(millis.toString()),
+        ),
+        Expanded(
+          child: ListView.builder(
+              itemCount: 10,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Row(
+                    children: <Widget>[
+                      Align(alignment: Alignment.centerLeft, child: Text("Address " + index.toString() + " :")),
+                      SizedBox(
+                        width: 15.0,
+                      ),
+                      Expanded(
+                          child: Align(
+                        alignment: Alignment.center,
+                        child: TextField(
+                          onSubmitted: (value) async {
+                            print(value);
+                            if (_port == null) {
+                              return;
+                            }
+                            String data = "es" + index.toString() + value;
+                            await _port.write(Uint8List.fromList(data.codeUnits));
+                            print("SEEEEEEEEEEEEEEEEEEEEEEEEEEEEEENNNNNNNNNNNNNNNNNND");
+                            print(data);
+                          },
+                          textAlign: TextAlign.center,
+                          decoration: new InputDecoration(labelText: "Enter number between 0 and 255"),
+                          keyboardType: TextInputType.number,
+                        ),
+                      )),
+                    ],
+                  ),
+                  trailing: Text(eeprom[index]),
+                );
+              }),
+        ),
+        /*
         ListTile(
           title: TextField(
             controller: _textController,
@@ -166,7 +232,21 @@ class _HomePageState extends State<HomePage> {
         ),
         Text("Result Data", style: Theme.of(context).textTheme.title),
         ..._serialData,
+        */
       ])),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _port == null
+            ? null
+            : () async {
+                if (_port == null) {
+                  return;
+                }
+                await _port.write(Uint8List.fromList("s0".codeUnits));
+                await _port.write(Uint8List.fromList("ea".codeUnits));
+              },
+        tooltip: 'get States',
+        child: Icon(Icons.refresh),
+      ),
     );
   }
 }
