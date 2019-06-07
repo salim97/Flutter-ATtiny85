@@ -26,7 +26,13 @@ Building android app with flutter to monitor attiny85 and control GPIO.
  
 </div>
     
-    
+# Download
+
+## Android apk
+
+https://github.com/salim97/Flutter-ATtiny85/releases/tag/v0.1-beta
+
+
 # Copyright © 2018-2019
 
 [Benabadji Mohammed Salim](https://github.com/salim97)
