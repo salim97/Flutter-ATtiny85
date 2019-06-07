@@ -3,12 +3,28 @@ Building android app with flutter to monitor attiny85 and control GPIO.
 
 # project goal
 - Flutter App to ATtiny85 via USB CDC
-    + [X] EEPROM Read / Write
     + [X] ATtiny85 VCC, freeRAM, internal temperature, cpu speed MHZ 
+    + [X] EEPROM Read / Write
     + [ ] RAM Read / Write
+    + [ ] RAM / EEPROM display as int and ascii char
     + [ ] GPIO Controll
     
-    
+<div style="text-align: center">
+    <table>
+        <tr>
+            <td style="text-align: center">
+                    <img src="https://github.com/salim97/Flutter-ATtiny85/blob/master/Screenshots/Screenshot_20190607-165309.jpg" width="200"/>
+            </td>            
+            <td style="text-align: center">
+                    <img src="https://github.com/salim97/Flutter-ATtiny85/blob/master/Screenshots/Screenshot_20190607-165321.jpg" width="200"/>
+            </td>
+            <td style="text-align: center">
+                    <img src="https://github.com/salim97/Flutter-ATtiny85/blob/master/Screenshots/Screenshot_20190607-165337.jpg" width="200" />
+            </td>
+        </tr>
+       
+    </table>
+</div>
     
     
 # Copyright © 2018-2019
