@@ -52,7 +52,7 @@ class _HomePageState extends State<HomePage> {
       });
       return true;
     }
-
+    if (device.productName == null) return false;
     _port = await device.create();
     if (!await _port.open()) {
       setState(() {
@@ -145,7 +145,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   int _currentIndex = 0;
-  bool is_LED_ON = false; 
+  bool is_LED_ON = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -181,15 +181,18 @@ class _HomePageState extends State<HomePage> {
                   title: Text(millis.toString()),
                 ),
                 ListTile(
-                  leading:  Icon(Icons.lightbulb_outline),
+                  leading: Icon(Icons.lightbulb_outline),
                   title: RaisedButton(
                     child: is_LED_ON ? Text("Build in led is ON") : Text("Build in led is OFF"),
-                    onPressed: () {
+                    onPressed: _port == null? null : () {
+                     
                       setState(() {
-                        is_LED_ON = ! is_LED_ON ;
-                        if(is_LED_ON)  _port.write(Uint8List.fromList("l0".codeUnits));
-                        else  _port.write(Uint8List.fromList("l1".codeUnits));
+                        is_LED_ON = !is_LED_ON;
                       });
+                      if (is_LED_ON)
+                        _port.write(Uint8List.fromList("l0".codeUnits));
+                      else
+                        _port.write(Uint8List.fromList("l1".codeUnits));
                     },
                   ),
                 ),

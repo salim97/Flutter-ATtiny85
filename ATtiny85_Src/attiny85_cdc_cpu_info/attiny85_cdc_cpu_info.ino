@@ -162,3 +162,4 @@ int8_t getTemperatureInternal() {
 int getMHz() {
         return F_CPU / 1000000;
 }
+
