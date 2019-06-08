@@ -145,7 +145,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   int _currentIndex = 0;
-
+  bool is_LED_ON = false; 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -179,6 +179,19 @@ class _HomePageState extends State<HomePage> {
                 ListTile(
                   leading: Icon(FontAwesomeIcons.clock),
                   title: Text(millis.toString()),
+                ),
+                ListTile(
+                  leading:  Icon(Icons.lightbulb_outline),
+                  title: RaisedButton(
+                    child: is_LED_ON ? Text("Build in led is ON") : Text("Build in led is OFF"),
+                    onPressed: () {
+                      setState(() {
+                        is_LED_ON = ! is_LED_ON ;
+                        if(is_LED_ON)  _port.write(Uint8List.fromList("l0".codeUnits));
+                        else  _port.write(Uint8List.fromList("l1".codeUnits));
+                      });
+                    },
+                  ),
                 ),
               ]))
             : ListView.builder(
